@@ -8,4 +8,8 @@ streamlit
 tiktoken
 sentence-transformers
 langchain-ollama
-streamlit
+fastapi
+uvicorn[standard]
+ddgs
+beautifulsoup4
+requests

@@ -5,7 +5,7 @@ from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_ollama import ChatOllama
 from langchain_core.prompts import ChatPromptTemplate
 from fastapi.middleware.cors import CORSMiddleware
-
+from backend.online_rag import get_online_legal_sources
 
 CHROMA_FOLDER = "chroma_db"
 
@@ -39,7 +39,11 @@ retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
 
 llm = ChatOllama(
     model="phi3",
-    temperature=0,
+    mirostat=2,
+    mirostat_tau=5,
+    mirostat_eta=0.1,
+    num_predict=600,
+    stop=["\nQuestion", "\nType: Source", "\nSources:"],
 )
 
 prompt = ChatPromptTemplate.from_template("""
@@ -48,14 +52,31 @@ Tu es un assistant juridique spécialisé dans le droit notarial allemand.
 Réponds toujours en français.
 Utilise uniquement les sources fournies.
 Ne donne pas de conseil juridique personnalisé.
-Cite toujours la loi, la page et le fichier source si disponibles.
-
+Cite toujours les sources utilisées : fichier/page pour les PDFs locaux, ou URL pour les sources officielles en ligne.
 Sources:
 {context}
 
-Question:
+Question (réponds uniquement en français, même si les sources sont en allemand ou en anglais):
 {question}
 """)
+
+def format_local_source(doc):
+    if doc.metadata.get("source_type") == "official_xml":
+        return (
+            f"Type: Loi officielle allemande\n"
+            f"Loi: {doc.metadata.get('law')}\n"
+            f"Section: {doc.metadata.get('section')}\n"
+            f"URL: {doc.metadata.get('url')}\n"
+            f"Texte: {doc.page_content[:1500]}"
+        )
+
+    return (
+        f"Type: Document local (PDF)\n"
+        f"Loi: {doc.metadata.get('law')}\n"
+        f"Fichier: {doc.metadata.get('source_file')}\n"
+        f"Page: {doc.metadata.get('page')}\n"
+        f"Texte: {doc.page_content[:1500]}"
+    )
 
 
 @app.post("/chat")
@@ -64,15 +85,21 @@ def chat(request: ChatRequest):
 
     docs = retriever.invoke(question)
 
-    context = "\n\n".join(
+    local_context = "\n\n".join(format_local_source(doc) for doc in docs)
+
+    online_sources = get_online_legal_sources(question, max_results=3)
+
+    online_context = "\n\n".join(
         [
-            f"Loi: {doc.metadata.get('law')}\n"
-            f"Fichier: {doc.metadata.get('source_file')}\n"
-            f"Page: {doc.metadata.get('page')}\n"
-            f"Texte: {doc.page_content[:1500]}"
-            for doc in docs
+            f"Type: Source officielle en ligne\n"
+            f"Titre: {source['title']}\n"
+            f"URL: {source['url']}\n"
+            f"Texte: {source['text'][:2000]}"
+            for source in online_sources
         ]
     )
+
+    context = local_context + "\n\n" + online_context
 
     messages = prompt.format_messages(
         context=context,
@@ -81,9 +108,12 @@ def chat(request: ChatRequest):
 
     response = llm.invoke(messages)
 
-    sources = [
+    local_sources = [
         {
+            "type": "official_law" if doc.metadata.get("source_type") == "official_xml" else "local_pdf",
             "law": doc.metadata.get("law"),
+            "section": doc.metadata.get("section"),
+            "url": doc.metadata.get("url"),
             "file": doc.metadata.get("source_file"),
             "page": doc.metadata.get("page"),
             "text": doc.page_content[:500],
@@ -91,7 +121,17 @@ def chat(request: ChatRequest):
         for doc in docs
     ]
 
+    web_sources = [
+        {
+            "type": "online",
+            "title": source["title"],
+            "url": source["url"],
+            "text": source["text"][:500],
+        }
+        for source in online_sources
+    ]
+
     return {
         "answer": response.content,
-        "sources": sources,
+        "sources": local_sources + web_sources,
     }

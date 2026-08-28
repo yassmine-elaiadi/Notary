@@ -7,6 +7,7 @@ from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 import tempfile
 from src.paragraph_extractor import extract_paragraph
+from backend.online_rag import get_online_legal_sources
 
 CHROMA_FOLDER = "chroma_db"
 
@@ -42,7 +43,11 @@ def load_rag():
 
     llm = ChatOllama(
         model="phi3",
-        temperature=0,
+        mirostat=2,
+        mirostat_tau=5,
+        mirostat_eta=0.1,
+        num_predict=600,
+        stop=["\nQuestion", "\nType: Source", "\nSources:"],
     )
 
     return retriever, llm, vectorstore
@@ -66,6 +71,7 @@ def add_uploaded_pdf(uploaded_file, vectorstore):
         chunk.metadata["law"] = "Uploaded Document"
         chunk.metadata["language"] = "unknown"
         chunk.metadata["source_file"] = uploaded_file.name
+        chunk.metadata["source_type"] = "user_upload"
 
     vectorstore.add_documents(chunks)
 
@@ -77,7 +83,7 @@ Tu es un assistant juridique spécialisé dans le droit notarial allemand.
 Réponds toujours en français.
 Utilise uniquement les sources fournies.
 Ne donne pas de conseil juridique personnalisé.
-Cite toujours la loi, la page et le fichier source si disponibles.
+Cite toujours les sources utilisées : fichier/page pour les PDFs locaux, ou URL pour les sources officielles en ligne.
 
 Ajoute toujours cette phrase à la fin :
 "Cette réponse est fournie à titre informatif uniquement et ne constitue pas un conseil juridique officiel."
@@ -91,7 +97,7 @@ Historique:
 Sources:
 {context}
 
-Question:
+Question (réponds uniquement en français, même si les sources sont en allemand ou en anglais):
 {question}
 """)
 
@@ -101,6 +107,9 @@ if "messages" not in st.session_state:
 
 if "sources" not in st.session_state:
     st.session_state.sources = []
+
+if "online_sources" not in st.session_state:
+    st.session_state.online_sources = []
 
 
 for message in st.session_state.messages:
@@ -127,16 +136,41 @@ if question:
         st.stop()
     docs = retriever.invoke(question)
 
-    context = "\n\n".join(
-        [
+    def format_local_source(doc):
+        if doc.metadata.get("source_type") == "official_xml":
+            return (
+                f"Type: Loi officielle allemande\n"
+                f"Loi: {doc.metadata.get('law')}\n"
+                f"Section: {doc.metadata.get('section')}\n"
+                f"URL: {doc.metadata.get('url')}\n"
+                f"Texte: {doc.page_content[:1500]}"
+            )
+
+        return (
+            f"Type: Document local (PDF)\n"
             f"Loi: {doc.metadata.get('law')}\n"
             f"Langue: {doc.metadata.get('language')}\n"
             f"Fichier: {doc.metadata.get('source_file')}\n"
             f"Page: {doc.metadata.get('page')}\n"
             f"Texte: {doc.page_content[:1500]}"
-            for doc in docs
+        )
+
+    local_context = "\n\n".join(format_local_source(doc) for doc in docs)
+
+    with st.spinner("Recherche de sources officielles en ligne..."):
+        online_sources = get_online_legal_sources(question, max_results=3)
+
+    online_context = "\n\n".join(
+        [
+            f"Type: Source officielle en ligne\n"
+            f"Titre: {source['title']}\n"
+            f"URL: {source['url']}\n"
+            f"Texte: {source['text'][:2000]}"
+            for source in online_sources
         ]
     )
+
+    context = local_context + "\n\n" + online_context
 
     history = "\n".join(
         [
@@ -160,6 +194,7 @@ if question:
     st.session_state.messages.append({"role": "assistant", "content": answer})
 
     st.session_state.sources = docs
+    st.session_state.online_sources = online_sources
 
 
 with st.sidebar:
@@ -177,9 +212,15 @@ with st.sidebar:
     if st.session_state.sources:
         for i, doc in enumerate(st.session_state.sources, start=1):
             st.markdown(f"**Source {i}**")
-            st.write("Loi:", doc.metadata.get("law"))
-            st.write("Fichier:", doc.metadata.get("source_file"))
-            st.write("Paragraphe:", extract_paragraph(doc.page_content))
+
+            if doc.metadata.get("source_type") == "official_xml":
+                st.write("Loi:", doc.metadata.get("law"))
+                st.write("Section:", doc.metadata.get("section"))
+                st.markdown(f"[{doc.metadata.get('url')}]({doc.metadata.get('url')})")
+            else:
+                st.write("Loi:", doc.metadata.get("law"))
+                st.write("Fichier:", doc.metadata.get("source_file"))
+                st.write("Paragraphe:", extract_paragraph(doc.page_content))
 
             with st.expander("Voir le texte juridique complet"):
                 st.write(doc.page_content)
@@ -187,3 +228,18 @@ with st.sidebar:
             st.divider()
     else:
         st.write("Aucune source encore.")
+
+    st.header("Sources officielles en ligne")
+
+    if st.session_state.online_sources:
+        for i, source in enumerate(st.session_state.online_sources, start=1):
+            st.markdown(f"**Source {i}**")
+            st.write(source["title"])
+            st.markdown(f"[{source['url']}]({source['url']})")
+
+            with st.expander("Voir le texte complet"):
+                st.write(source["text"])
+
+            st.divider()
+    else:
+        st.write("Aucune source en ligne encore.")
