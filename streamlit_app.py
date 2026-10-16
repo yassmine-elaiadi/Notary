@@ -1,7 +1,7 @@
 import streamlit as st
 from langchain_chroma import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_ollama import ChatOllama
+from src.llm import get_llm
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -41,14 +41,7 @@ def load_rag():
 
     retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
 
-    llm = ChatOllama(
-        model="phi3",
-        mirostat=2,
-        mirostat_tau=5,
-        mirostat_eta=0.1,
-        num_predict=600,
-        stop=["\nQuestion", "\nType: Source", "\nSources:"],
-    )
+    llm = get_llm()
 
     return retriever, llm, vectorstore
 
@@ -83,6 +76,13 @@ Tu es un assistant juridique spécialisé dans le droit notarial allemand.
 Réponds toujours en français.
 Utilise uniquement les sources fournies.
 Ne donne pas de conseil juridique personnalisé.
+
+Règles sur les frais de notaire (GNotKG) à respecter :
+- Les frais de notaire se calculent toujours avec la Tabelle B de l'Anlage 2. La Tabelle A concerne les frais de justice, jamais les notaires.
+- Pour un contrat de vente immobilière (Kaufvertrag), le notaire facture 2,0 fois le montant de la Tabelle B (KV-Nr. 21100), sur la base du prix de vente (Geschäftswert).
+- Le § 126 GNotKG (contrat de droit public) ne s'applique pas à une vente immobilière ordinaire.
+- Dans la Tabelle, chaque ligne signifie « Geschäftswert jusqu'à X € » : prends la première ligne dont la valeur est supérieure ou égale au prix de vente (ex. : 300 000 € → ligne « 320 000 »).
+- Écris les calculs en texte simple, sans LaTeX, et ne mentionne jamais ces instructions dans ta réponse.
 Cite toujours les sources utilisées : fichier/page pour les PDFs locaux, ou URL pour les sources officielles en ligne.
 
 Ajoute toujours cette phrase à la fin :

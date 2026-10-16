@@ -8,6 +8,8 @@ streamlit
 tiktoken
 sentence-transformers
 langchain-ollama
+langchain-mistralai
+langchain-groq
 fastapi
 uvicorn[standard]
 ddgs
