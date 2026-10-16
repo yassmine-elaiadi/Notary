@@ -9,3 +9,5 @@ frontend/.next/
 
 logs/
 data/laws_xml/
+
+tests/results/

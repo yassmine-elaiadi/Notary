@@ -1,0 +1,130 @@
+[
+  {
+    "id": "fees_180k",
+    "topic": "Frais (GNotKG)",
+    "question": "Combien coûtent les frais de notaire pour une vente immobilière à 180 000 € en Allemagne ?",
+    "sources": [["GNotKG", "Anlage 2"]],
+    "must_match": ["Tabelle B|Table B", "816"],
+    "note": "Ligne « bis 185 000 » = 408 € x 2,0 = 816 €"
+  },
+  {
+    "id": "fees_450k",
+    "topic": "Frais (GNotKG)",
+    "question": "Quels sont les frais de notaire pour un Kaufvertrag d'une maison à 450 000 € ?",
+    "sources": [["GNotKG", "Anlage 2"]],
+    "must_match": ["Tabelle B|Table B", "1 ?770"],
+    "note": "Ligne « bis 470 000 » = 885 € x 2,0 = 1 770 €"
+  },
+  {
+    "id": "fees_1m",
+    "topic": "Frais (GNotKG)",
+    "question": "Combien le notaire facture-t-il pour la vente d'un immeuble à exactement 1 000 000 € ?",
+    "sources": [["GNotKG", "Anlage 2"]],
+    "must_match": ["Tabelle B|Table B", "3 ?470"],
+    "note": "Cas limite : ligne « bis 1 000 000 » exactement = 1 735 € x 2,0 = 3 470 €"
+  },
+  {
+    "id": "sale_form",
+    "topic": "Immobilier (BGB)",
+    "question": "Un contrat de vente d'un terrain en Allemagne doit-il être conclu devant un notaire ?",
+    "sources": [["BGB", "§ 311b"]],
+    "must_match": ["311 ?b", "notari"],
+    "note": "§ 311b Abs. 1 BGB : acte notarié obligatoire"
+  },
+  {
+    "id": "ownership_transfer",
+    "topic": "Immobilier (BGB)",
+    "question": "Comment se fait le transfert de propriété d'un bien immobilier en Allemagne ?",
+    "sources": [["BGB", "§ 925"], ["BGB", "§ 873"]],
+    "must_match": ["925|873", "Grundbuch|registre foncier|livre foncier"],
+    "note": "Auflassung (§ 925) + inscription au Grundbuch (§ 873)"
+  },
+  {
+    "id": "handwritten_will",
+    "topic": "Succession (BGB)",
+    "question": "Quelles sont les conditions de validité d'un testament olographe en droit allemand ?",
+    "sources": [["BGB", "§ 2247"]],
+    "must_match": ["2247", "main|manuscrit|eigenhändig", "sign"],
+    "note": "§ 2247 BGB : écrit et signé de la main du testateur"
+  },
+  {
+    "id": "spouse_share",
+    "topic": "Succession (BGB)",
+    "question": "Quelle part de la succession revient au conjoint survivant s'il y a des enfants ?",
+    "sources": [["BGB", "§ 1931"]],
+    "must_match": ["1931", "quart|1/4"],
+    "note": "§ 1931 : 1/4 à côté des descendants (+ 1/4 via § 1371 en Zugewinngemeinschaft)"
+  },
+  {
+    "id": "pflichtteil",
+    "topic": "Succession (BGB)",
+    "question": "Un enfant exclu du testament a-t-il droit à une réserve (Pflichtteil) ?",
+    "sources": [["BGB", "§ 2303"]],
+    "must_match": ["2303", "moitié|1/2|Hälfte"],
+    "note": "§ 2303 : la moitié de la part légale"
+  },
+  {
+    "id": "renunciation_deadline",
+    "topic": "Succession (BGB)",
+    "question": "Dans quel délai un héritier peut-il renoncer à une succession en Allemagne ?",
+    "sources": [["BGB", "§ 1944"]],
+    "must_match": ["1944", "six semaines|6 semaines|sechs Wochen"],
+    "note": "§ 1944 Abs. 1 : six semaines (six mois si domicile à l'étranger, Abs. 3)"
+  },
+  {
+    "id": "erbschein",
+    "topic": "Succession (BGB/FamFG)",
+    "question": "Comment obtenir un certificat d'héritier (Erbschein) en Allemagne ?",
+    "sources": [["BGB", "§ 2353"], ["FamFG", "§ 352"]],
+    "must_match": ["Erbschein|certificat d'héritier|certificat d'hérédité", "2353|352"],
+    "note": "§ 2353 BGB (délivrance par le tribunal), § 352 FamFG (contenu de la demande)"
+  },
+  {
+    "id": "notary_impartial",
+    "topic": "Notaire (BNotO)",
+    "question": "Le notaire allemand doit-il rester impartial entre les parties ?",
+    "sources": [["BNotO", "§ 14"]],
+    "must_match": ["§ ?14\\b", "impartial|unparteiisch"],
+    "note": "§ 14 Abs. 1 BNotO"
+  },
+  {
+    "id": "deed_reading",
+    "topic": "Notaire (BeurkG)",
+    "question": "Le notaire doit-il lire l'acte à voix haute aux parties avant la signature ?",
+    "sources": [["BeurkG", "§ 13"]],
+    "must_match": ["§ ?13\\b", "lu|lecture|lire|vorgelesen"],
+    "note": "§ 13 Abs. 1 BeurkG : lecture, approbation, signature"
+  },
+  {
+    "id": "duty_to_inform",
+    "topic": "Notaire (BeurkG)",
+    "question": "Le notaire a-t-il une obligation d'information envers les parties lors d'un acte ?",
+    "sources": [["BeurkG", "§ 17"]],
+    "must_match": ["§ ?17\\b"],
+    "note": "§ 17 BeurkG : Prüfungs- und Belehrungspflichten"
+  },
+  {
+    "id": "grundbuch_proof",
+    "topic": "Registre foncier (GBO)",
+    "question": "Sous quelle forme une procuration doit-elle être présentée au Grundbuchamt ?",
+    "sources": [["GBO", "§ 29"]],
+    "must_match": ["§ ?29\\b", "authentique|certifi|öffentlich|publique|beglaubigt"],
+    "note": "§ 29 GBO : documents publics ou publiquement certifiés"
+  },
+  {
+    "id": "weg_division",
+    "topic": "Copropriété (WEG)",
+    "question": "Comment un propriétaire peut-il diviser un immeuble en appartements en copropriété (Wohnungseigentum) ?",
+    "sources": [["WEG", "§ 8"]],
+    "must_match": ["§ ?8\\b", "Teilungserklärung|déclaration de division|division"],
+    "note": "§ 8 WEG : Teilung durch den Eigentümer"
+  },
+  {
+    "id": "out_of_scope",
+    "topic": "Hors sujet",
+    "question": "Quel est le taux de TVA appliqué en France sur les produits alimentaires ?",
+    "sources": [],
+    "must_match": ["ne permettent pas de répondre"],
+    "note": "Doit refuser : hors du droit notarial allemand"
+  }
+]
