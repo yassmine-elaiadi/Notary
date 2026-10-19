@@ -24,11 +24,10 @@ from langchain_chroma import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
 
 from src.llm import get_llm
-from src.prompts import NOTARY_PROMPT, format_local_source
+from src.prompts import NOTARY_PROMPT, RETRIEVER_K, format_local_source
 
 QUESTIONS_FILE = ROOT / "tests" / "eval_questions.json"
 RESULTS_DIR = ROOT / "tests" / "results"
-RETRIEVER_K = 3  # same as load_rag() in streamlit_app.py
 
 
 def normalize(text):

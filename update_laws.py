@@ -37,11 +37,24 @@ SOURCE_TYPE = "official_xml"
 # chunk, they'd get silently truncated by the embedding model or blow out
 # the LLM's whole context if ever retrieved - split those into pieces.
 MAX_SECTION_CHARS = 3000
-section_splitter = RecursiveCharacterTextSplitter(
-    chunk_size=MAX_SECTION_CHARS,
-    chunk_overlap=0,
-    separators=["\n\n", "\n"],
-)
+# Lookup tables (e.g. GNotKG Anlage 2, the fee table) are only usable whole:
+# split across chunks, the row the model needs is often in a chunk that
+# wasn't retrieved. Allow them up to this size before splitting.
+MAX_TABLE_CHARS = 6000
+
+
+def make_splitter(chunk_size):
+    # Some schedules (GNotKG Anlage 1) have almost no line breaks; without the
+    # sentence/word fallbacks the splitter can't cut them and emits 70K+ chunks.
+    return RecursiveCharacterTextSplitter(
+        chunk_size=chunk_size,
+        chunk_overlap=0,
+        separators=["\n\n", "\n", ". ", " "],
+    )
+
+
+section_splitter = make_splitter(MAX_SECTION_CHARS)
+table_splitter = make_splitter(MAX_TABLE_CHARS)
 
 # Fixed list of laws relevant to German notarial practice, mapped to their
 # slug on gesetze-im-internet.de (used both for the download URL and for
@@ -169,11 +182,10 @@ def parse_sections(law, slug, xml_bytes):
             + (f"\n({breadcrumb})" if breadcrumb else "")
         )
 
-        pieces = (
-            section_splitter.split_text(text)
-            if len(text) > MAX_SECTION_CHARS
-            else [text]
+        max_chars, splitter = (
+            (MAX_TABLE_CHARS, table_splitter) if table_text else (MAX_SECTION_CHARS, section_splitter)
         )
+        pieces = splitter.split_text(text) if len(text) > max_chars else [text]
         multi_part = len(pieces) > 1
 
         for i, piece in enumerate(pieces, start=1):

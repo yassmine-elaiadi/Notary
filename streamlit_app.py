@@ -2,7 +2,7 @@ import streamlit as st
 from langchain_chroma import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from src.llm import get_llm
-from src.prompts import NOTARY_PROMPT, format_local_source
+from src.prompts import NOTARY_PROMPT, RETRIEVER_K, format_local_source
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 import tempfile
@@ -39,7 +39,7 @@ def load_rag():
         embedding_function=embeddings,
     )
 
-    retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
+    retriever = vectorstore.as_retriever(search_kwargs={"k": RETRIEVER_K})
 
     llm = get_llm()
 

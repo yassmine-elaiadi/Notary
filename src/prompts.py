@@ -33,6 +33,15 @@ Question (réponds uniquement en français, même si les sources sont en alleman
 """)
 
 
+# Sections retrieved per question. tests/run_eval.py showed the right section
+# at ranks 4-7 for several questions, so 3 was too few.
+RETRIEVER_K = 8
+
+# Chunks are capped at 3000 chars (6000 for tables) by update_laws.py; cutting
+# them shorter hides half of a table from the model
+MAX_SOURCE_CHARS = 6000
+
+
 def format_local_source(doc):
     if doc.metadata.get("source_type") == "official_xml":
         return (
@@ -40,7 +49,7 @@ def format_local_source(doc):
             f"Loi: {doc.metadata.get('law')}\n"
             f"Section: {doc.metadata.get('section')}\n"
             f"URL: {doc.metadata.get('url')}\n"
-            f"Texte: {doc.page_content[:1500]}"
+            f"Texte: {doc.page_content[:MAX_SOURCE_CHARS]}"
         )
 
     return (
@@ -49,5 +58,5 @@ def format_local_source(doc):
         f"Langue: {doc.metadata.get('language')}\n"
         f"Fichier: {doc.metadata.get('source_file')}\n"
         f"Page: {doc.metadata.get('page')}\n"
-        f"Texte: {doc.page_content[:1500]}"
+        f"Texte: {doc.page_content[:MAX_SOURCE_CHARS]}"
     )
